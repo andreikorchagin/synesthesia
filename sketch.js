@@ -109,8 +109,8 @@ function draw() {
 function drawCircularSpectrum(spectrum, bass, mid, treble) {
   push();
   // Subtle drift toward mouse
-  let cx = lerp(width/2, mouseX, 0.1);
-  let cy = lerp(height/2, mouseY, 0.1);
+  let cx = lerp(width/2, mouseX, 0.03);
+  let cy = lerp(height/2, mouseY, 0.03);
   translate(cx, cy);
 
   let numBars = 180;
@@ -173,8 +173,8 @@ function drawCircularSpectrum(spectrum, bass, mid, treble) {
 function drawWaveformTunnel(waveform, bass, mid) {
   push();
   // Subtle drift toward mouse
-  let cx = lerp(width/2, mouseX, 0.15);
-  let cy = lerp(height/2, mouseY, 0.15);
+  let cx = lerp(width/2, mouseX, 0.05);
+  let cy = lerp(height/2, mouseY, 0.05);
   translate(cx, cy);
 
   let numRings = 20;
@@ -234,7 +234,7 @@ function drawParticleField(spectrum, bass) {
       let mdy = mouseY - py;
       let md = sqrt(mdx * mdx + mdy * mdy);
       if (md > 0 && md < 300) {
-        let attraction = map(md, 0, 300, 8, 0);
+        let attraction = map(md, 0, 300, 2, 0);
         px += (mdx / md) * attraction;
         py += (mdy / md) * attraction;
       }
@@ -261,7 +261,7 @@ function drawMirrorBars(spectrum, bass, mid) {
   let barWidth = width / numBars;
 
   // Mouse influences the center line position subtly
-  let centerY = lerp(height/2, mouseY, 0.15);
+  let centerY = lerp(height/2, mouseY, 0.05);
 
   for (let i = 0; i < numBars; i++) {
     let index = floor(map(i, 0, numBars, 0, spectrum.length / 2));
@@ -299,8 +299,8 @@ function drawMirrorBars(spectrum, bass, mid) {
 function drawSpiralGalaxy(spectrum, bass, treble) {
   push();
   // Galaxy center follows mouse slightly
-  let centerX = lerp(width/2, mouseX, 0.2);
-  let centerY = lerp(height/2, mouseY, 0.2);
+  let centerX = lerp(width/2, mouseX, 0.05);
+  let centerY = lerp(height/2, mouseY, 0.05);
   translate(centerX, centerY);
 
   // Mouse distance affects rotation speed
@@ -360,8 +360,8 @@ function drawSpiralGalaxy(spectrum, bass, treble) {
 function drawGeometricPulse(spectrum, bass, mid, treble) {
   push();
   // Subtle drift toward mouse
-  let cx = lerp(width/2, mouseX, 0.1);
-  let cy = lerp(height/2, mouseY, 0.1);
+  let cx = lerp(width/2, mouseX, 0.03);
+  let cy = lerp(height/2, mouseY, 0.03);
   translate(cx, cy);
 
   let shapes = 6;
