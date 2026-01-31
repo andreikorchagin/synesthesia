@@ -9,8 +9,6 @@ let hueOffset = 0;
 let time = 0;
 
 // Mouse interaction
-let mouseTrail = [];
-let maxTrailLength = 20;
 let mouseInfluence = 0; // 0-1, how much mouse affects visualization
 
 // Color schemes
@@ -97,20 +95,11 @@ function draw() {
     }
   }
 
-  // Update mouse trail
-  mouseTrail.push({ x: mouseX, y: mouseY, age: 0 });
-  if (mouseTrail.length > maxTrailLength) {
-    mouseTrail.shift();
-  }
-
   // Calculate mouse influence (distance from center)
   let dx = mouseX - width / 2;
   let dy = mouseY - height / 2;
   let distFromCenter = sqrt(dx * dx + dy * dy);
   mouseInfluence = constrain(distFromCenter / (min(width, height) * 0.5), 0, 1);
-
-  // Draw mouse effects
-  drawMouseEffects(bass, mid);
 
   // Draw mode indicator
   drawUI();
@@ -119,7 +108,10 @@ function draw() {
 // MODE 0: Enhanced circular spectrum
 function drawCircularSpectrum(spectrum, bass, mid, treble) {
   push();
-  translate(width/2, height/2);
+  // Subtle drift toward mouse
+  let cx = lerp(width/2, mouseX, 0.1);
+  let cy = lerp(height/2, mouseY, 0.1);
+  translate(cx, cy);
 
   let numBars = 180;
   let radius = min(width, height) * 0.2;
@@ -180,7 +172,10 @@ function drawCircularSpectrum(spectrum, bass, mid, treble) {
 // MODE 1: Waveform tunnel
 function drawWaveformTunnel(waveform, bass, mid) {
   push();
-  translate(width/2, height/2);
+  // Subtle drift toward mouse
+  let cx = lerp(width/2, mouseX, 0.15);
+  let cy = lerp(height/2, mouseY, 0.15);
+  translate(cx, cy);
 
   let numRings = 20;
   noFill();
@@ -234,21 +229,17 @@ function drawParticleField(spectrum, bass) {
       px += cos(angle) * displacement;
       py += sin(angle) * displacement;
 
-      // Mouse attraction - particles gravitate toward cursor
-      let dx = mouseX - px;
-      let dy = mouseY - py;
-      let d = sqrt(dx * dx + dy * dy);
-      if (d < 200) {
-        let attraction = map(d, 0, 200, 30, 0);
-        px += (dx / d) * attraction * 0.3;
-        py += (dy / d) * attraction * 0.3;
+      // Subtle mouse attraction - particles drift gently toward cursor
+      let mdx = mouseX - px;
+      let mdy = mouseY - py;
+      let md = sqrt(mdx * mdx + mdy * mdy);
+      if (md > 0 && md < 300) {
+        let attraction = map(md, 0, 300, 8, 0);
+        px += (mdx / md) * attraction;
+        py += (mdy / md) * attraction;
       }
 
       let size = map(amp, 0, 255, 2, 15);
-      // Particles near mouse get bigger
-      if (d < 150) {
-        size += map(d, 0, 150, 10, 0);
-      }
 
       let hue = (getSchemeHue((x + y) / (cols + rows)) + hueOffset) % 360;
       let bri = map(amp, 0, 255, 20, 100);
@@ -269,6 +260,9 @@ function drawMirrorBars(spectrum, bass, mid) {
   let numBars = 64;
   let barWidth = width / numBars;
 
+  // Mouse influences the center line position subtly
+  let centerY = lerp(height/2, mouseY, 0.15);
+
   for (let i = 0; i < numBars; i++) {
     let index = floor(map(i, 0, numBars, 0, spectrum.length / 2));
     let amp = spectrum[index];
@@ -280,23 +274,23 @@ function drawMirrorBars(spectrum, bass, mid) {
     // Top bars
     fill(hue, sat, 90, 80);
     noStroke();
-    rect(i * barWidth, height/2 - barHeight, barWidth - 2, barHeight, 3);
+    rect(i * barWidth, centerY - barHeight, barWidth - 2, barHeight, 3);
 
     // Bottom bars (mirror)
     fill(hue, sat, 70, 60);
-    rect(i * barWidth, height/2, barWidth - 2, barHeight, 3);
+    rect(i * barWidth, centerY, barWidth - 2, barHeight, 3);
 
     // Glow on peaks
     if (amp > 200) {
       fill(hue, 60, 100, 30);
-      ellipse(i * barWidth + barWidth/2, height/2, barWidth * 2, barHeight * 0.3);
+      ellipse(i * barWidth + barWidth/2, centerY, barWidth * 2, barHeight * 0.3);
     }
   }
 
   // Center line
   stroke(0, 0, 100, map(bass, 0, 255, 20, 80));
   strokeWeight(2);
-  line(0, height/2, width, height/2);
+  line(0, centerY, width, centerY);
 
   pop();
 }
@@ -365,7 +359,10 @@ function drawSpiralGalaxy(spectrum, bass, treble) {
 // MODE 5: Geometric pulse
 function drawGeometricPulse(spectrum, bass, mid, treble) {
   push();
-  translate(width/2, height/2);
+  // Subtle drift toward mouse
+  let cx = lerp(width/2, mouseX, 0.1);
+  let cy = lerp(height/2, mouseY, 0.1);
+  translate(cx, cy);
 
   let shapes = 6;
   let maxRadius = min(width, height) * 0.4;
@@ -428,7 +425,7 @@ function drawUI() {
   textAlign(LEFT, TOP);
   text(`MODE: ${modeNames[mode]} (1-6)`, 20, 20);
   text(`COLOR: ${schemes[currentScheme].name} (C)`, 20, 40);
-  text(`[SPACE] Next Mode  [CLICK] Particles`, 20, 60);
+  text(`[SPACE] Next Mode`, 20, 60);
 
   pop();
 }
@@ -479,69 +476,3 @@ function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
 }
 
-// Mouse effects
-function drawMouseEffects(bass, mid) {
-  // Draw glowing trail
-  noStroke();
-  for (let i = 0; i < mouseTrail.length; i++) {
-    let t = mouseTrail[i];
-    let alpha = map(i, 0, mouseTrail.length, 5, 40);
-    let size = map(i, 0, mouseTrail.length, 5, 30);
-    size += map(bass, 0, 255, 0, 20); // Pulse with bass
-
-    let hue = (hueOffset + i * 10) % 360;
-    fill(hue, 80, 90, alpha);
-    ellipse(t.x, t.y, size);
-  }
-
-  // Draw cursor glow
-  let glowSize = map(mid, 0, 255, 40, 100);
-  let hue = (hueOffset + 180) % 360;
-
-  // Outer glow
-  for (let i = 3; i > 0; i--) {
-    fill(hue, 70, 90, 10);
-    ellipse(mouseX, mouseY, glowSize * i);
-  }
-
-  // Inner bright core
-  fill(hue, 50, 100, 60);
-  ellipse(mouseX, mouseY, 15);
-
-  // Connection lines to nearby particles
-  stroke(hue, 60, 90, 20);
-  strokeWeight(1);
-  for (let p of particles) {
-    let d = dist(mouseX, mouseY, p.pos.x, p.pos.y);
-    if (d < 150) {
-      let alpha = map(d, 0, 150, 40, 0);
-      stroke(hue, 60, 90, alpha);
-      line(mouseX, mouseY, p.pos.x, p.pos.y);
-    }
-  }
-}
-
-// Click to spawn particle burst
-function mousePressed() {
-  if (!started) return;
-
-  // Spawn particles at mouse position
-  for (let i = 0; i < 20; i++) {
-    let p = new Particle(mouseX, mouseY, 200, 150);
-    p.hue = (hueOffset + random(60)) % 360;
-    particles.push(p);
-  }
-}
-
-// Drag to create continuous particle stream
-function mouseDragged() {
-  if (!started) return;
-
-  // Spawn fewer particles while dragging
-  if (frameCount % 3 === 0) {
-    let p = new Particle(mouseX, mouseY, 150, 100);
-    p.hue = (hueOffset + random(60)) % 360;
-    p.decay = random(5, 10); // Faster decay for drag particles
-    particles.push(p);
-  }
-}
